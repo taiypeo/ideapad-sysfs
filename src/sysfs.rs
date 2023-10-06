@@ -1,6 +1,9 @@
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, Read, Write};
+use std::num::ParseIntError;
 use std::path::Path;
+
+// TODO: move sysfs item enums here?
 
 const BASE_PATH: &str = "/sys/bus/platform/drivers/ideapad_acpi";
 const VPC: &str = "VPC";
@@ -12,6 +15,7 @@ pub enum Error {
     FileError(io::Error),
     VPCDirectoryNotFound,
     ReadError(io::Error),
+    InvalidFileContent(ParseIntError),
     WriteError(io::Error),
 }
 
@@ -42,14 +46,15 @@ pub fn open_file(
     Err(Error::VPCDirectoryNotFound)
 }
 
-pub fn read_from_file(file: &mut File) -> Result<String, Error> {
+pub fn read_from_file(file: &mut File) -> Result<u8, Error> {
     let mut buf = String::new();
     file.read_to_string(&mut buf)
         .map_err(|err| Error::ReadError(err))?;
-    Ok(buf)
+    buf.parse().map_err(|err| Error::InvalidFileContent(err))
 }
 
-pub fn write_to_file(file: &mut File, buf: &str) -> Result<(), Error> {
+pub fn write_to_file(file: &mut File, value: u8) -> Result<(), Error> {
+    let buf = value.to_string();
     Ok(file
         .write_all(buf.as_bytes())
         .map_err(|err| Error::WriteError(err))?)

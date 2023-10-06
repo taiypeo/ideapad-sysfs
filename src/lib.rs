@@ -1,8 +1,9 @@
 use clap::{Parser, Subcommand};
+use std::fs::OpenOptions;
 
 mod sysfs;
 
-trait SysfsItem {
+pub trait SysfsItem {
     fn filename(&self) -> &'static str;
 }
 
@@ -67,6 +68,25 @@ pub enum Action {
         #[command(subcommand)]
         sysfs_item: SettableSysfsItem,
     },
+}
+
+impl Action {
+    fn act(&self) -> Result<(), String> {
+        match self {
+            Action::Toggle { sysfs_item } => todo!(),
+            Action::On { sysfs_item } => todo!(),
+            Action::Off { sysfs_item } => todo!(),
+            Action::Set { sysfs_item } => todo!(),
+        }
+    }
+
+    fn toggle(sysfs_item: &BinarySysfsItem) -> Result<(), sysfs::Error> {
+        let mut options = OpenOptions::new();
+        let options = options.read(true).write(true);
+        let mut file = sysfs::open_file(sysfs_item, options)?;
+        let content = sysfs::read_from_file(&mut file)?;
+        todo!();
+    }
 }
 
 #[derive(Parser)]
