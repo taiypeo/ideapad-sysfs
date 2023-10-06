@@ -1,5 +1,11 @@
 use clap::{Parser, Subcommand};
 
+mod sysfs;
+
+trait SysfsItem {
+    fn filename(&self) -> &'static str;
+}
+
 #[derive(Debug, Subcommand)]
 pub enum BinarySysfsItem {
     /// Camera power
@@ -12,12 +18,26 @@ pub enum BinarySysfsItem {
     FnLock,
 }
 
-impl BinarySysfsItem {
+impl SysfsItem for BinarySysfsItem {
     fn filename(&self) -> &'static str {
         match self {
             BinarySysfsItem::CameraPower => "camera_power",
             BinarySysfsItem::ConservationMode => "conservation_mode",
             BinarySysfsItem::FnLock => "fn_lock",
+        }
+    }
+}
+
+#[derive(Debug, Subcommand)]
+pub enum SettableSysfsItem {
+    /// Fan mode
+    FanMode,
+}
+
+impl SysfsItem for SettableSysfsItem {
+    fn filename(&self) -> &'static str {
+        match self {
+            SettableSysfsItem::FanMode => "fan_mode",
         }
     }
 }
@@ -40,6 +60,12 @@ pub enum Action {
     Off {
         #[command(subcommand)]
         sysfs_item: BinarySysfsItem,
+    },
+
+    /// Set
+    Set {
+        #[command(subcommand)]
+        sysfs_item: SettableSysfsItem,
     },
 }
 
