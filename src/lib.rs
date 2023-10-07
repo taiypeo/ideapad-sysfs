@@ -2,11 +2,22 @@ use clap::{Parser, Subcommand};
 
 mod sysfs;
 
-pub trait SysfsItem {
-    fn filename(&self) -> &'static str;
+#[derive(Subcommand)]
+pub enum ReadableSysfsItem {
+    /// Camera power
+    CameraPower,
+
+    /// Battery conservation mode
+    ConservationMode,
+
+    /// Fn key lock
+    FnLock,
+
+    /// Fan mode
+    FanMode,
 }
 
-#[derive(Debug, Subcommand)]
+#[derive(Subcommand)]
 pub enum BinarySysfsItem {
     /// Camera power
     CameraPower,
@@ -18,28 +29,13 @@ pub enum BinarySysfsItem {
     FnLock,
 }
 
-impl SysfsItem for BinarySysfsItem {
-    fn filename(&self) -> &'static str {
-        match self {
-            BinarySysfsItem::CameraPower => "camera_power",
-            BinarySysfsItem::ConservationMode => "conservation_mode",
-            BinarySysfsItem::FnLock => "fn_lock",
-        }
-    }
-}
-
-#[derive(Debug, Subcommand)]
+#[derive(Subcommand)]
 pub enum SettableSysfsItem {
     /// Fan mode
-    FanMode,
-}
-
-impl SysfsItem for SettableSysfsItem {
-    fn filename(&self) -> &'static str {
-        match self {
-            SettableSysfsItem::FanMode => "fan_mode",
-        }
-    }
+    FanMode {
+        #[arg(short, long)]
+        value: u8,
+    },
 }
 
 #[derive(Subcommand)]
@@ -71,7 +67,7 @@ pub enum Action {
     /// Read
     Read {
         #[command(subcommand)]
-        sysfs_item: SettableSysfsItem,
+        sysfs_item: ReadableSysfsItem,
     },
 }
 

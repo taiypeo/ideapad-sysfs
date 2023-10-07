@@ -3,8 +3,6 @@ use std::io::{self, Read, Write};
 use std::num::ParseIntError;
 use std::path::{Path, PathBuf};
 
-// TODO: move sysfs item enums here?
-
 const BASE_PATH: &str = "/sys/bus/platform/drivers/ideapad_acpi";
 const VPC: &str = "VPC";
 
@@ -38,6 +36,35 @@ impl File {
     }
 }
 
+impl From<crate::ReadableSysfsItem> for File {
+    fn from(item: crate::ReadableSysfsItem) -> Self {
+        match item {
+            crate::ReadableSysfsItem::CameraPower => File::CameraPower,
+            crate::ReadableSysfsItem::ConservationMode => File::ConservationMode,
+            crate::ReadableSysfsItem::FnLock => File::FnLock,
+            crate::ReadableSysfsItem::FanMode => File::FanMode,
+        }
+    }
+}
+
+impl From<crate::BinarySysfsItem> for File {
+    fn from(item: crate::BinarySysfsItem) -> Self {
+        match item {
+            crate::BinarySysfsItem::CameraPower => File::CameraPower,
+            crate::BinarySysfsItem::ConservationMode => File::ConservationMode,
+            crate::BinarySysfsItem::FnLock => File::FnLock,
+        }
+    }
+}
+
+impl From<crate::SettableSysfsItem> for File {
+    fn from(item: crate::SettableSysfsItem) -> Self {
+        match item {
+            crate::SettableSysfsItem::FanMode { value: _ } => File::FanMode,
+        }
+    }
+}
+
 enum Action {
     On,
     Off,
@@ -63,9 +90,33 @@ impl Action {
     }
 }
 
+impl From<crate::Action> for Action {
+    fn from(action: crate::Action) -> Self {
+        match action {
+            crate::Action::Toggle { sysfs_item: _ } => Action::Toggle,
+            crate::Action::On { sysfs_item: _ } => Action::On,
+            crate::Action::Off { sysfs_item: _ } => Action::Off,
+            crate::Action::Set { sysfs_item } => match sysfs_item {
+                crate::SettableSysfsItem::FanMode { value } => Action::Set(value),
+            },
+            crate::Action::Read { sysfs_item: _ } => Action::Load,
+        }
+    }
+}
+
 pub struct FileAction {
     file: File,
     action: Action,
+}
+
+impl FileAction {
+    fn new(file: File, action: Action) -> FileAction {
+        FileAction { file, action }
+    }
+
+    fn perform(&self) -> Result<(), Error> {
+        self.action.perform(self.file.filename())
+    }
 }
 
 fn construct_filepath(filename: &str) -> Result<PathBuf, Error> {
