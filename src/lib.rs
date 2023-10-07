@@ -2,6 +2,8 @@ use clap::{Parser, Subcommand};
 
 mod sysfs;
 
+// TODO: figure out how to fix this horrible enum usage
+
 #[derive(Subcommand)]
 pub enum ReadableSysfsItem {
     /// Camera power
@@ -76,4 +78,26 @@ pub enum Action {
 pub struct Args {
     #[command(subcommand)]
     pub action: Action,
+}
+
+pub fn run(action: Action) -> Result<(), sysfs::Error> {
+    let transformed_action = sysfs::Action::new(&action);
+    let file_action = match action {
+        Action::Toggle { sysfs_item } => {
+            sysfs::FileAction::new(sysfs::File::new_binary(&sysfs_item), transformed_action)
+        }
+        Action::On { sysfs_item } => {
+            sysfs::FileAction::new(sysfs::File::new_binary(&sysfs_item), transformed_action)
+        }
+        Action::Off { sysfs_item } => {
+            sysfs::FileAction::new(sysfs::File::new_binary(&sysfs_item), transformed_action)
+        }
+        Action::Set { sysfs_item } => {
+            sysfs::FileAction::new(sysfs::File::new_settable(&sysfs_item), transformed_action)
+        }
+        Action::Read { sysfs_item } => {
+            sysfs::FileAction::new(sysfs::File::new_readable(&sysfs_item), transformed_action)
+        }
+    };
+    file_action.perform()
 }

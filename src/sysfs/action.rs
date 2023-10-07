@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 const BASE_PATH: &str = "/sys/bus/platform/drivers/ideapad_acpi";
 const VPC: &str = "VPC";
 
+#[derive(Debug)]
 pub enum Error {
     BasePathError(io::Error),
     DirectoryIOError(io::Error),
@@ -13,7 +14,7 @@ pub enum Error {
     FileError(io::Error),
     VPCDirectoryNotFound,
     ReadError(io::Error),
-    CannotParseFile(ParseIntError),
+    InvalidFileContent(ParseIntError),
     FileIsNotBinary,
     WriteError(io::Error),
 }
@@ -27,6 +28,18 @@ pub enum Action {
 }
 
 impl Action {
+    pub fn new(action: &crate::Action) -> Self {
+        match action {
+            crate::Action::Toggle { sysfs_item: _ } => Action::Toggle,
+            crate::Action::On { sysfs_item: _ } => Action::On,
+            crate::Action::Off { sysfs_item: _ } => Action::Off,
+            crate::Action::Set { sysfs_item } => match sysfs_item {
+                crate::SettableSysfsItem::FanMode { value } => Action::Set(*value),
+            },
+            crate::Action::Read { sysfs_item: _ } => Action::Load,
+        }
+    }
+
     pub fn perform(&self, filename: &str) -> Result<(), Error> {
         let filepath = construct_filepath(filename)?;
         match self {
@@ -39,20 +52,6 @@ impl Action {
                 Ok(())
             }
             Action::Toggle => toggle(&filepath),
-        }
-    }
-}
-
-impl From<crate::Action> for Action {
-    fn from(action: crate::Action) -> Self {
-        match action {
-            crate::Action::Toggle { sysfs_item: _ } => Action::Toggle,
-            crate::Action::On { sysfs_item: _ } => Action::On,
-            crate::Action::Off { sysfs_item: _ } => Action::Off,
-            crate::Action::Set { sysfs_item } => match sysfs_item {
-                crate::SettableSysfsItem::FanMode { value } => Action::Set(value),
-            },
-            crate::Action::Read { sysfs_item: _ } => Action::Load,
         }
     }
 }
@@ -87,7 +86,7 @@ fn read_from_file(file: &mut fs::File) -> Result<u8, Error> {
     let mut buf = String::new();
     file.read_to_string(&mut buf)
         .map_err(|err| Error::ReadError(err))?;
-    buf.parse().map_err(|err| Error::CannotParseFile(err))
+    buf.parse().map_err(|err| Error::InvalidFileContent(err))
 }
 
 fn write_to_file(file: &mut fs::File, value: u8) -> Result<(), Error> {

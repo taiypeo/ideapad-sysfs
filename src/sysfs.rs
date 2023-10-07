@@ -1,8 +1,9 @@
 mod action;
 mod file;
 
-use action::{Action, Error};
-use file::File;
+pub use action::Action;
+pub use action::Error;
+pub use file::File;
 
 pub struct FileAction {
     file: File,
@@ -10,11 +11,11 @@ pub struct FileAction {
 }
 
 impl FileAction {
-    fn new(file: File, action: Action) -> FileAction {
+    pub fn new(file: File, action: Action) -> FileAction {
         FileAction { file, action }
     }
 
-    fn perform(&self) -> Result<(), Error> {
+    pub fn perform(&self) -> Result<(), Error> {
         self.action.perform(self.file.filename())
     }
 }
