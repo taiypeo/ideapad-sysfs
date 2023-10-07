@@ -28,18 +28,6 @@ pub enum Action {
 }
 
 impl Action {
-    pub fn new(action: &crate::Action) -> Self {
-        match action {
-            crate::Action::Toggle { sysfs_item: _ } => Action::Toggle,
-            crate::Action::On { sysfs_item: _ } => Action::On,
-            crate::Action::Off { sysfs_item: _ } => Action::Off,
-            crate::Action::Set { sysfs_item } => match sysfs_item {
-                crate::SettableSysfsItem::FanMode { value } => Action::Set(*value as u8),
-            },
-            crate::Action::Read { sysfs_item: _ } => Action::Load,
-        }
-    }
-
     pub fn perform(&self, filename: &str) -> Result<(), Error> {
         let filepath = construct_filepath(filename)?;
         match self {

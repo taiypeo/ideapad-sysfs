@@ -1,107 +1,109 @@
 use clap::{Parser, Subcommand, ValueEnum};
 
 mod sysfs;
+use sysfs::{Action, Error, File, FileAction};
 
 // TODO: figure out how to fix this horrible enum usage
 
-#[derive(ValueEnum, Clone, Copy)]
-pub enum FanSpeeds {
+#[derive(ValueEnum, Clone, Copy, Debug)]
+pub enum FanSpeed {
     SuperSilentMode = 0,
     StandardMode = 1,
     DustCleaningMode = 2,
     EfficientThermalDissipationMode = 4,
 }
 
-#[derive(Subcommand)]
-pub enum BinarySysfsItem {
-    /// Camera power
-    CameraPower,
-
-    /// Battery conservation mode
-    ConservationMode,
-
-    /// Fn key lock
-    FnLock,
-}
-
-#[derive(Subcommand)]
-pub enum SettableSysfsItem {
-    /// Fan mode
-    FanMode {
-        #[arg(value_enum, short, long)]
-        value: FanSpeeds,
-    },
-}
-
-#[derive(Subcommand)]
-pub enum ReadableSysfsItem {
-    #[command(flatten)]
-    Binary(BinarySysfsItem),
-
-    #[command(flatten)]
-    Settable(SettableSysfsItem),
-}
-
-#[derive(Subcommand)]
-pub enum Action {
-    /// Toggle value
-    Toggle {
-        #[command(subcommand)]
-        sysfs_item: BinarySysfsItem,
-    },
-
-    /// Turn on
-    On {
-        #[command(subcommand)]
-        sysfs_item: BinarySysfsItem,
-    },
-
-    /// Turn off
-    Off {
-        #[command(subcommand)]
-        sysfs_item: BinarySysfsItem,
-    },
-
-    /// Set
-    Set {
-        #[command(subcommand)]
-        sysfs_item: SettableSysfsItem,
-    },
-
-    /// Read
-    Read {
-        #[command(subcommand)]
-        sysfs_item: ReadableSysfsItem,
-    },
-}
-
-#[derive(Parser)]
+#[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
     #[command(subcommand)]
-    action: Action,
+    sysfs_item: SysfsItemCommand,
 }
 
 impl Args {
-    pub fn run(&self) -> Result<(), sysfs::Error> {
-        let transformed_action = sysfs::Action::new(&self.action);
-        let file_action = match &self.action {
-            Action::Toggle { sysfs_item } => {
-                sysfs::FileAction::new(sysfs::File::new_binary(&sysfs_item), transformed_action)
+    pub fn run(&self) -> Result<(), Error> {
+        match &self.sysfs_item {
+            SysfsItemCommand::CameraPower { action } => {
+                FileAction::new(File::CameraPower, action.get_action())
             }
-            Action::On { sysfs_item } => {
-                sysfs::FileAction::new(sysfs::File::new_binary(&sysfs_item), transformed_action)
+            SysfsItemCommand::ConservationMode { action } => {
+                FileAction::new(File::ConservationMode, action.get_action())
             }
-            Action::Off { sysfs_item } => {
-                sysfs::FileAction::new(sysfs::File::new_binary(&sysfs_item), transformed_action)
+            SysfsItemCommand::FnLock { action } => {
+                FileAction::new(File::FnLock, action.get_action())
             }
-            Action::Set { sysfs_item } => {
-                sysfs::FileAction::new(sysfs::File::new_settable(&sysfs_item), transformed_action)
+            SysfsItemCommand::FanMode { action } => {
+                FileAction::new(File::FanMode, action.get_action())
             }
-            Action::Read { sysfs_item } => {
-                sysfs::FileAction::new(sysfs::File::new_readable(&sysfs_item), transformed_action)
-            }
-        };
-        file_action.perform()
+        }
+        .perform()
+    }
+}
+
+#[derive(Subcommand, Debug)]
+enum SysfsItemCommand {
+    /// Camera power
+    CameraPower {
+        #[command(subcommand)]
+        action: BinaryActionCommand,
+    },
+
+    /// Battery conservation mode
+    ConservationMode {
+        #[command(subcommand)]
+        action: BinaryActionCommand,
+    },
+
+    /// Fn key lock
+    FnLock {
+        #[command(subcommand)]
+        action: BinaryActionCommand,
+    },
+
+    /// FanMode
+    FanMode {
+        #[command(subcommand)]
+        action: FanSpeedActionCommand,
+    },
+}
+
+trait ActionCommand {
+    fn get_action(&self) -> Action;
+}
+
+#[derive(Subcommand, Debug)]
+enum BinaryActionCommand {
+    Toggle,
+    On,
+    Off,
+    Read,
+}
+
+impl ActionCommand for BinaryActionCommand {
+    fn get_action(&self) -> Action {
+        match self {
+            BinaryActionCommand::Toggle => Action::Toggle,
+            BinaryActionCommand::On => Action::On,
+            BinaryActionCommand::Off => Action::Off,
+            BinaryActionCommand::Read => Action::Load,
+        }
+    }
+}
+
+#[derive(Subcommand, Debug)]
+enum FanSpeedActionCommand {
+    Set {
+        #[arg(value_enum)]
+        value: FanSpeed,
+    },
+    Read,
+}
+
+impl ActionCommand for FanSpeedActionCommand {
+    fn get_action(&self) -> Action {
+        match self {
+            FanSpeedActionCommand::Set { value } => Action::Set(*value as u8),
+            FanSpeedActionCommand::Read => Action::Load,
+        }
     }
 }
