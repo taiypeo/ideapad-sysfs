@@ -34,7 +34,7 @@ impl Action {
             crate::Action::On { sysfs_item: _ } => Action::On,
             crate::Action::Off { sysfs_item: _ } => Action::Off,
             crate::Action::Set { sysfs_item } => match sysfs_item {
-                crate::SettableSysfsItem::FanMode { value } => Action::Set(*value),
+                crate::SettableSysfsItem::FanMode { value } => Action::Set(*value as u8),
             },
             crate::Action::Read { sysfs_item: _ } => Action::Load,
         }

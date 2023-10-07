@@ -1,8 +1,16 @@
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 
 mod sysfs;
 
 // TODO: figure out how to fix this horrible enum usage
+
+#[derive(ValueEnum, Clone, Copy)]
+pub enum FanSpeeds {
+    SuperSilentMode = 0,
+    StandardMode = 1,
+    DustCleaningMode = 2,
+    EfficientThermalDissipationMode = 4,
+}
 
 #[derive(Subcommand)]
 pub enum BinarySysfsItem {
@@ -20,8 +28,8 @@ pub enum BinarySysfsItem {
 pub enum SettableSysfsItem {
     /// Fan mode
     FanMode {
-        #[arg(short, long)]
-        value: u8,
+        #[arg(value_enum, short, long)]
+        value: FanSpeeds,
     },
 }
 
@@ -71,27 +79,29 @@ pub enum Action {
 #[command(author, version, about, long_about = None)]
 pub struct Args {
     #[command(subcommand)]
-    pub action: Action,
+    action: Action,
 }
 
-pub fn run(action: Action) -> Result<(), sysfs::Error> {
-    let transformed_action = sysfs::Action::new(&action);
-    let file_action = match action {
-        Action::Toggle { sysfs_item } => {
-            sysfs::FileAction::new(sysfs::File::new_binary(&sysfs_item), transformed_action)
-        }
-        Action::On { sysfs_item } => {
-            sysfs::FileAction::new(sysfs::File::new_binary(&sysfs_item), transformed_action)
-        }
-        Action::Off { sysfs_item } => {
-            sysfs::FileAction::new(sysfs::File::new_binary(&sysfs_item), transformed_action)
-        }
-        Action::Set { sysfs_item } => {
-            sysfs::FileAction::new(sysfs::File::new_settable(&sysfs_item), transformed_action)
-        }
-        Action::Read { sysfs_item } => {
-            sysfs::FileAction::new(sysfs::File::new_readable(&sysfs_item), transformed_action)
-        }
-    };
-    file_action.perform()
+impl Args {
+    pub fn run(&self) -> Result<(), sysfs::Error> {
+        let transformed_action = sysfs::Action::new(&self.action);
+        let file_action = match &self.action {
+            Action::Toggle { sysfs_item } => {
+                sysfs::FileAction::new(sysfs::File::new_binary(&sysfs_item), transformed_action)
+            }
+            Action::On { sysfs_item } => {
+                sysfs::FileAction::new(sysfs::File::new_binary(&sysfs_item), transformed_action)
+            }
+            Action::Off { sysfs_item } => {
+                sysfs::FileAction::new(sysfs::File::new_binary(&sysfs_item), transformed_action)
+            }
+            Action::Set { sysfs_item } => {
+                sysfs::FileAction::new(sysfs::File::new_settable(&sysfs_item), transformed_action)
+            }
+            Action::Read { sysfs_item } => {
+                sysfs::FileAction::new(sysfs::File::new_readable(&sysfs_item), transformed_action)
+            }
+        };
+        file_action.perform()
+    }
 }
