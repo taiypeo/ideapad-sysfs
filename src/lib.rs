@@ -5,21 +5,6 @@ mod sysfs;
 // TODO: figure out how to fix this horrible enum usage
 
 #[derive(Subcommand)]
-pub enum ReadableSysfsItem {
-    /// Camera power
-    CameraPower,
-
-    /// Battery conservation mode
-    ConservationMode,
-
-    /// Fn key lock
-    FnLock,
-
-    /// Fan mode
-    FanMode,
-}
-
-#[derive(Subcommand)]
 pub enum BinarySysfsItem {
     /// Camera power
     CameraPower,
@@ -38,6 +23,15 @@ pub enum SettableSysfsItem {
         #[arg(short, long)]
         value: u8,
     },
+}
+
+#[derive(Subcommand)]
+pub enum ReadableSysfsItem {
+    #[command(flatten)]
+    Binary(BinarySysfsItem),
+
+    #[command(flatten)]
+    Settable(SettableSysfsItem),
 }
 
 #[derive(Subcommand)]

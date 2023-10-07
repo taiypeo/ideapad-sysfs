@@ -8,10 +8,8 @@ pub enum File {
 impl File {
     pub fn new_readable(item: &crate::ReadableSysfsItem) -> Self {
         match item {
-            crate::ReadableSysfsItem::CameraPower => File::CameraPower,
-            crate::ReadableSysfsItem::ConservationMode => File::ConservationMode,
-            crate::ReadableSysfsItem::FnLock => File::FnLock,
-            crate::ReadableSysfsItem::FanMode => File::FanMode,
+            crate::ReadableSysfsItem::Binary(item) => File::new_binary(item),
+            crate::ReadableSysfsItem::Settable(item) => File::new_settable(item),
         }
     }
 
