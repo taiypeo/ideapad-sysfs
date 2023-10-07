@@ -86,7 +86,9 @@ fn read_from_file(file: &mut fs::File) -> Result<u8, Error> {
     let mut buf = String::new();
     file.read_to_string(&mut buf)
         .map_err(|err| Error::ReadError(err))?;
-    buf.parse().map_err(|err| Error::InvalidFileContent(err))
+    buf.trim()
+        .parse()
+        .map_err(|err| Error::InvalidFileContent(err))
 }
 
 fn write_to_file(file: &mut fs::File, value: u8) -> Result<(), Error> {
@@ -116,7 +118,7 @@ fn toggle(path: &PathBuf) -> Result<(), Error> {
     let mut file = open_file(path, &options)?;
     let content = read_from_file(&mut file)?;
 
-    let mut new_content;
+    let new_content;
     if content == 0 {
         new_content = 1;
     } else if content == 1 {
