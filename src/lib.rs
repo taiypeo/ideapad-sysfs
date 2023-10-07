@@ -3,8 +3,6 @@ use clap::{Parser, Subcommand, ValueEnum};
 mod sysfs;
 use sysfs::{Action, Error, File, FileAction};
 
-// TODO: figure out how to fix this horrible enum usage
-
 #[derive(ValueEnum, Clone, Copy, Debug)]
 pub enum FanSpeed {
     SuperSilentMode = 0,
