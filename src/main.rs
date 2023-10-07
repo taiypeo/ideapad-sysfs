@@ -1,6 +1,6 @@
+use anyhow::Result;
 use clap::Parser;
 
-fn main() {
-    let args = ideapad_sysfs::Args::parse();
-    args.run().unwrap(); // TODO: have something better than .unwrap()
+fn main() -> Result<()> {
+    ideapad_sysfs::Args::parse().run().map_err(|err| err.into())
 }
