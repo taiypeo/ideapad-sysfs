@@ -7,4 +7,6 @@ description = "A Lenovo Ideapad sysfs configuration tool"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anyhow = "1.0.75"
 clap = { version = "4.4.6", features = ["derive"] }
+thiserror = "1.0.49"

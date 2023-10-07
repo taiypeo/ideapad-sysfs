@@ -3,19 +3,38 @@ use std::io::{self, Read, Write};
 use std::num::ParseIntError;
 use std::path::{Path, PathBuf};
 
+use thiserror;
+
 const BASE_PATH: &str = "/sys/bus/platform/drivers/ideapad_acpi";
 const VPC: &str = "VPC";
 
-#[derive(Debug)]
+#[derive(thiserror::Error, Debug)]
 pub enum Error {
+    #[error("Failed to read the IdeaPad ACPI sysfs directory: {0}")]
     BasePathError(io::Error),
+
+    #[error("IO error happened while reading the IdeaPad ACPI sysfs directory: {0}")]
     DirectoryIOError(io::Error),
+
+    #[error("Path to an entry in the IdeaPad ACPI sysfs directory has invalid characters")]
     PathHasInvalidCharacters,
+
+    #[error("Failed to open a sysfs file: {0}")]
     FileError(io::Error),
+
+    #[error("'VPC...' directory was not fild in the IdeaPad ACPI sysfs directory")]
     VPCDirectoryNotFound,
+
+    #[error("Failed to read a sysfs file: {0}")]
     ReadError(io::Error),
-    InvalidFileContent(ParseIntError),
+
+    #[error("Failed to parse a sysfs file: {0}")]
+    FileParseError(ParseIntError),
+
+    #[error("Expected a sysfs file to be binary, while it is not")]
     FileIsNotBinary,
+
+    #[error("Failed to write to a sysfs file: {0}")]
     WriteError(io::Error),
 }
 
@@ -74,9 +93,7 @@ fn read_from_file(file: &mut fs::File) -> Result<u8, Error> {
     let mut buf = String::new();
     file.read_to_string(&mut buf)
         .map_err(|err| Error::ReadError(err))?;
-    buf.trim()
-        .parse()
-        .map_err(|err| Error::InvalidFileContent(err))
+    buf.trim().parse().map_err(|err| Error::FileParseError(err))
 }
 
 fn write_to_file(file: &mut fs::File, value: u8) -> Result<(), Error> {
